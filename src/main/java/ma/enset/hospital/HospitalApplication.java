@@ -1,10 +1,7 @@
 package ma.enset.hospital;
 
 import ma.enset.hospital.entities.*;
-import ma.enset.hospital.repositories.ConsultationRepository;
-import ma.enset.hospital.repositories.MedecinRepository;
-import ma.enset.hospital.repositories.PatientRepository;
-import ma.enset.hospital.repositories.RendezVousRepository;
+import ma.enset.hospital.service.IHospitalService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -19,7 +16,7 @@ public class HospitalApplication { //we implement this interface so we can add d
 		SpringApplication.run(HospitalApplication.class, args);
 	}
 	@Bean
-	CommandLineRunner start(PatientRepository patientRepository, MedecinRepository medecinRepository, RendezVousRepository rendezVousRepository, ConsultationRepository consultationRepository){
+	CommandLineRunner start(IHospitalService hospitalService){
 		return args -> {
 			Stream.of("mohamed", "ayoub", "abdrahman")
 					.forEach(name->{
@@ -27,7 +24,7 @@ public class HospitalApplication { //we implement this interface so we can add d
 						patient.setNom(name);
 						patient.setMalade(false);
 						patient.setDateNaissance(new Date());
-						patientRepository.save(patient);
+						hospitalService.savePatient(patient);
 					});
 
 			Stream.of("ahmad", "abdelouahed", "ayman")
@@ -36,27 +33,35 @@ public class HospitalApplication { //we implement this interface so we can add d
 						medecin.setNom(name);
 						medecin.setEmail(name+"@gmail.com");
 						medecin.setSpecialite(Math.random()>0.5 ? "Neurologie" : "Cardio");
-						medecinRepository.save(medecin);
+						hospitalService.saveMedecin(medecin);
 					});
 
-			Patient patient=patientRepository.findById(1L).orElse(null); //if user with id=1 doesnt exist return null
-			Patient patient1 = patientRepository.findByNom("mohamed") ;
-			Medecin medecin = medecinRepository.findByNom( "ahmad");
+			Patient patient=hospitalService.findPatientById(1L) ; //if user with id=1 doesnt exist return null
+			Medecin medecin = hospitalService.findMedecinByNom( "ahmad");
 
 			RendezVous rendezVous= new RendezVous();
 			rendezVous.setDate(new Date());
 			rendezVous.setMedecin (medecin) ;
 			rendezVous.setPatient(patient);
 			rendezVous.setStatus(StatusRDV.PENDING) ;
-			rendezVousRepository.save(rendezVous);
+			RendezVous savedRD = hospitalService.saveRD(rendezVous);
+			System.out.println(savedRD.getId());
 
-
-			RendezVous rendezVous1 = rendezVousRepository.findById(1L).orElse(null) ;
+			RendezVous rendezVous1 = hospitalService.findRDById(1L);
 			Consultation consultation = new Consultation();
 			consultation.setDateConsultation(new Date());
 			consultation.setRendezVous(rendezVous1);
 			consultation.setRapport("rapport de la consultation ...");
-			consultationRepository.save(consultation);
+			hospitalService.saveConsultation(consultation);
+
+			//on va mis a jour le patient "ayoub"
+			Patient patient1 = new Patient();
+			patient1.setNom("ayoub");
+			patient1.setMalade(true);
+			patient1.setDateNaissance(new Date());
+			hospitalService.updatePatient(patient1);
+
+			hospitalService.deletePatientById(2L);
 		};
 	}
 }
